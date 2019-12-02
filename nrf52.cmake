@@ -333,7 +333,7 @@ function(GENERATE_UPDATE_FLASH_TARGET TARGET UPDATE_FILE_TYPE ZIP_FILE)
 				${UPDATE_ARGS_COMMON})
 
 
-		if (SOFTDEVICE_FWID_OLD)
+		if (NOT SOFTDEVICE_FWID_OLD)
 			message(WARNING "No SOFTDEVICE_FWID_OLD was specified, please check codes in
 		 		https://github.com/NordicSemiconductor/pc-nrfutil/blob/master/README.md")
 			return()
@@ -341,7 +341,6 @@ function(GENERATE_UPDATE_FLASH_TARGET TARGET UPDATE_FILE_TYPE ZIP_FILE)
 
 
 		set(GEN_UPDATE_ARGS
-				${UPDATE_CMD_START}
 				${BL_UPDATE_ARGS}
 				${APP_UPDATE_ARGS}
 				${SD_UPDATE_ARGS}
