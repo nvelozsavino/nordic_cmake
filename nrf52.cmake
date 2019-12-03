@@ -16,6 +16,7 @@ function(CHECK_VAR_FILE FILE_VAR)
 		return()
 	endif()
 	if (${FILE_VAR}-CREATE)
+		message(STATUS "${FILE_VAR}=${${FILE_VAR}} will be created on compilation")
 		get_filename_component(FILE_VAR_TXT ${${FILE_VAR}} ABSOLUTE)
 		set (${FILE_VAR}-REALPATH ${FILE_VAR_TXT} PARENT_SCOPE)
 		return()
@@ -32,10 +33,15 @@ function(CHECK_VAR_FILE FILE_VAR)
 	endif()
 endfunction()
 
-function(NRF_FLASH_BOOTLOADER TARGET APP_HEX_FILE)
+function(NRF_FLASH_BOOTLOADER TARGET)
 	CHECK_VAR_FILE(BOOTLOADER_HEX_FILE)
 	if (NOT BOOTLOADER_HEX_FILE-REALPATH)
 		message(WARNING "No BOOTLOADER_HEX_FILE was specified or ${BOOTLOADER_HEX_FILE} doesn't exist")
+		return()
+	endif()
+	CHECK_VAR_FILE(APP_HEX_FILE)
+	if (NOT APP_HEX_FILE-REALPATH)
+		message(WARNING "No APP_HEX_FILE was specified or ${APP_HEX_FILE} doesn't exist")
 		return()
 	endif()
 	message(STATUS "Bootloader file ${BOOTLOADER_HEX_FILE-REALPATH}")
@@ -68,7 +74,7 @@ function(NRF_FLASH_BOOTLOADER TARGET APP_HEX_FILE)
 			COMMAND echo "Bootloader bundle hex done ${BOOT_BUNDLE_HEX_FILE}"
 #			COMMAND ${DELFILE_CMD} ${SETTINGS_HEX_FILE}
 			PARENT_SCOPE)
-	set(BOOTLOADER_FLASH_CMD -c "program \"${BOOT_FILE}\" verify" PARENT_SCOPE)
+	set(BOOTLOADER_FLASH_CMD -c "program \"${BOOT_BUNDLE_HEX_FILE}\" verify" PARENT_SCOPE)
 endfunction()
 
 
@@ -168,8 +174,8 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 			-c init
 			-c halt
 			${MASS_ERASE_FLASH_CMD}
-			${BOOTLOADER_FLASH_CMD}
 			${SOFTDEVICE_FLASH_CMD}
+			${BOOTLOADER_FLASH_CMD}
 			${APP_FLASH_CMD}
 			-c reset
 			-c exit)
