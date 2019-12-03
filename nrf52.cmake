@@ -125,7 +125,7 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 		set(DELFILE_CMD rm -f)
 	endif()
 
-	if (MASS_ERASE)
+	if (FLASH_MASS_ERASE)
 		message(STATUS "Mass erase enabled")
 		set(MASS_ERASE_FLASH_CMD -c "nrf5 mass_erase")
 	else()
@@ -174,7 +174,7 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 			-c reset
 			-c exit)
 
-
+	message(STATUS "OPENOCD_FLASH_CMD = ${OPENOCD_FLASH_CMD}")
 	add_custom_target(Flash
 			DEPENDS ${TARGET}
 
