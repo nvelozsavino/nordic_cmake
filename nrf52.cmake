@@ -33,7 +33,7 @@ function(CHECK_VAR_FILE FILE_VAR)
 	endif()
 endfunction()
 
-function(NRF_FLASH_BOOTLOADER TARGET)
+function(NRF_FLASH_SETTINGS TARGET)
 	CHECK_VAR_FILE(BOOTLOADER_HEX_FILE)
 	if (NOT BOOTLOADER_HEX_FILE-REALPATH)
 		message(WARNING "No BOOTLOADER_HEX_FILE was specified or ${BOOTLOADER_HEX_FILE} doesn't exist")
@@ -54,27 +54,30 @@ function(NRF_FLASH_BOOTLOADER TARGET)
 		return()
 	endif()
 
-	if (NOT MERGEHEX_BIN)
-		find_program(MERGEHEX_BIN mergehex)
-	endif()
-	if (NOT MERGEHEX_BIN)
-		message(WARNING "mergehex not found, the bootloader hex can't be created")
-		return()
-	endif()
+#	if (NOT MERGEHEX_BIN)
+#		find_program(MERGEHEX_BIN mergehex)
+#	endif()
+#	if (NOT MERGEHEX_BIN)
+#		message(WARNING "mergehex not found, the bootloader hex can't be created")
+#		return()
+#	endif()
 
-	set(BOOT_BUNDLE_HEX_FILE ${CMAKE_BINARY_DIR}/${TARGET}-boot.hex)
 	set(SETTINGS_HEX_FILE ${CMAKE_BINARY_DIR}/${TARGET}-settings.hex)
 
-	set(BOOTLOADER_HEX_CMD
-			COMMAND echo "Preparing Bootloader hex file"
+	set(SETTINGS_HEX_CMD
+			COMMAND echo "Preparing Settings hex file"
 			COMMAND ${DELFILE_CMD} ${SETTINGS_HEX_FILE}
-			COMMAND ${DELFILE_CMD} ${BOOT_BUNDLE_HEX_FILE}
-			COMMAND ${NRFUTIL_BIN} settings generate --family NRF52 --application ${APP_HEX_FILE} --application-version 1 --bootloader-version 1 --bl-settings-version 1 ${SETTINGS_HEX_FILE}
-			COMMAND ${MERGEHEX_BIN} -m ${BOOTLOADER_HEX_FILE-REALPATH} ${SETTINGS_HEX_FILE} -o ${BOOT_BUNDLE_HEX_FILE}
-			COMMAND echo "Bootloader bundle hex done ${BOOT_BUNDLE_HEX_FILE}"
+#			COMMAND ${DELFILE_CMD} ${BOOT_BUNDLE_HEX_FILE}
+			COMMAND ${NRFUTIL_BIN} settings generate --family NRF52 --application ${APP_HEX_FILE} --application-version 1 --bootloader-version 1 --bl-settings-version 1 "${SETTINGS_HEX_FILE}"
+#			COMMAND ${MERGEHEX_BIN} -m ${BOOTLOADER_HEX_FILE-REALPATH} ${SETTINGS_HEX_FILE} -o ${BOOT_BUNDLE_HEX_FILE}
+#			COMMAND echo "Bootloader bundle hex done ${BOOT_BUNDLE_HEX_FILE}"
 #			COMMAND ${DELFILE_CMD} ${SETTINGS_HEX_FILE}
 			PARENT_SCOPE)
-	set(BOOTLOADER_FLASH_CMD -c "program \"${BOOT_BUNDLE_HEX_FILE}\" verify" PARENT_SCOPE)
+	set(SETTINGS_FLASH_CMD
+			-c "program \"${SETTINGS_HEX_FILE}\" verify"
+			PARENT_SCOPE)
+
+	message(STATUS "SETTINGS_HEX_FILE = ${SETTINGS_HEX_FILE}")
 endfunction()
 
 
@@ -90,6 +93,20 @@ function(NRF_FLASH_SOFTDEVICE)
 	message(STATUS "Softdevice file ${SOFTDEVICE_HEX_FILE-REALPATH}")
 
 	set(SOFTDEVICE_FLASH_CMD -c "program \"${SOFTDEVICE_HEX_FILE-REALPATH}\" verify" PARENT_SCOPE)
+endfunction()
+
+function(NRF_FLASH_BOOTLOADER)
+	set(BOOTLOADER_FLASH_CMD "" PARENT_SCOPE)
+
+	CHECK_VAR_FILE(BOOTLOADER_HEX_FILE)
+	if (NOT BOOTLOADER_HEX_FILE-REALPATH)
+		message(WARNING "No BOOTLOADER_HEX_FILE file was specified or ${BOOTLOADER_HEX_FILE} doesn't exist")
+		return()
+	endif()
+
+	message(STATUS "Bootloader file ${BOOTLOADER_HEX_FILE-REALPATH}")
+
+	set(BOOTLOADER_FLASH_CMD -c "program \"${BOOTLOADER_HEX_FILE-REALPATH}\" verify" PARENT_SCOPE)
 endfunction()
 
 
@@ -120,6 +137,7 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 	set(HLA_SERIAL "" CACHE STRING "HLA Serial")
 	set(FLASH_MASS_ERASE FALSE CACHE BOOL "Mass erase")
 	set(FLASH_BOOTLOADER FALSE CACHE BOOL "Flash bootloader")
+	set(FLASH_SETTINGS FALSE CACHE BOOL "Flash settings")
 	set(FLASH_SOFTDEVICE FALSE CACHE BOOL "Flash softdevice")
 
 
@@ -142,9 +160,18 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 	#	Check for bootloader requirements
 	if (FLASH_BOOTLOADER)
 		message(STATUS "Bootloader file flash enabled")
-		NRF_FLASH_BOOTLOADER(${TARGET} ${APP_HEX_FILE})
+		NRF_FLASH_BOOTLOADER()
 	else()
 		message(STATUS "Bootloader file flash disabled")
+	endif()
+
+	#	Check for softdevice requirements
+	if (FLASH_SETTINGS)
+		message(STATUS "Settings file flash enabled")
+		NRF_FLASH_SETTINGS(${TARGET})
+		message(STATUS "Settings ${SETTINGS_HEX_FILE}")
+	else()
+		message(STATUS "Settings file flash disabled")
 	endif()
 
 	#	Check for softdevice requirements
@@ -175,10 +202,12 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 			-c halt
 			${MASS_ERASE_FLASH_CMD}
 			${SOFTDEVICE_FLASH_CMD}
+			${SETTINGS_FLASH_CMD}
 			${BOOTLOADER_FLASH_CMD}
 			${APP_FLASH_CMD})
 
 	message(STATUS "OPENOCD_FLASH_CMD = ${OPENOCD_FLASH_CMD}")
+	message(STATUS "SETTINGS_HEX_CMD = ${SETTINGS_HEX_CMD}")
 	add_custom_target(Flash
 			DEPENDS ${TARGET}
 
@@ -186,7 +215,7 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 			COMMAND ${DELFILE_CMD} ${APP_HEX_FILE}.hex
 			COMMAND ${CMAKE_OBJCOPY} -Oihex ${CMAKE_BINARY_DIR}/${TARGET} ${APP_HEX_FILE}
 			COMMAND echo ${APP_HEX_FILE} created
-			${BOOTLOADER_HEX_CMD}
+			${SETTINGS_HEX_CMD}
 			COMMAND ${OPENOCD_BIN} -f ${OPENOCD_CFG} ${OPENOCD_SCRIPT_CMD}  ${OPENOCD_FLASH_CMD} -c reset -c exit
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} USES_TERMINAL)
 
