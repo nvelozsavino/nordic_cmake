@@ -135,11 +135,23 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 	endif()
 
 	set(HLA_SERIAL "" CACHE STRING "HLA Serial")
-	set(FLASH_MASS_ERASE FALSE CACHE BOOL "Mass erase")
-	set(FLASH_BOOTLOADER FALSE CACHE BOOL "Flash bootloader")
-	set(FLASH_SETTINGS FALSE CACHE BOOL "Flash settings")
-	set(FLASH_SOFTDEVICE FALSE CACHE BOOL "Flash softdevice")
 
+	set(FLASH_CLEAN TRUE CACHE BOOL "Flash everything (TRUE) or just program and settings (FALSE)")
+
+	set(HAS_BOOTLOADER TRUE CACHE BOOL "Specify if there's BOOTLOADER")
+
+	if (FLASH_CLEAN)
+		set(FLASH_MASS_ERASE TRUE)
+		set(FLASH_BOOTLOADER TRUE)
+		set(FLASH_SETTINGS TRUE)
+		set(FLASH_SOFTDEVICE TRUE)
+	else()
+		set(FLASH_MASS_ERASE FALSE)
+		set(FLASH_BOOTLOADER FALSE)
+		set(FLASH_SETTINGS TRUE)
+		set(FLASH_SOFTDEVICE FALSE)
+
+	endif()
 
 
 
@@ -156,24 +168,28 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 		message(STATUS "Mass erase disabled")
 		set(MASS_ERASE_FLASH_CMD)
 	endif()
+	if (HAS_BOOTLOADER)
+		message(STATUS "Creating config for bootloader")
+		#	Check for bootloader requirements
+		if (FLASH_BOOTLOADER)
+			message(STATUS "Bootloader file flash enabled")
+			NRF_FLASH_BOOTLOADER()
+		else()
+			message(STATUS "Bootloader file flash disabled")
+		endif()
 
-	#	Check for bootloader requirements
-	if (FLASH_BOOTLOADER)
-		message(STATUS "Bootloader file flash enabled")
-		NRF_FLASH_BOOTLOADER()
-	else()
-		message(STATUS "Bootloader file flash disabled")
-	endif()
+		#	Check for softdevice requirements
+		if (FLASH_SETTINGS)
+			message(STATUS "Settings file flash enabled")
+			NRF_FLASH_SETTINGS(${TARGET})
+			message(STATUS "Settings ${SETTINGS_HEX_FILE}")
+		else()
+			message(STATUS "Settings file flash disabled")
+		endif()
+	else(HAS_BOOTLOADER)
+		message(STATUS "Not using config for bootloader")
 
-	#	Check for softdevice requirements
-	if (FLASH_SETTINGS)
-		message(STATUS "Settings file flash enabled")
-		NRF_FLASH_SETTINGS(${TARGET})
-		message(STATUS "Settings ${SETTINGS_HEX_FILE}")
-	else()
-		message(STATUS "Settings file flash disabled")
-	endif()
-
+	endif(HAS_BOOTLOADER)
 	#	Check for softdevice requirements
 	if (FLASH_SOFTDEVICE)
 		message(STATUS "Softdevice file flash enabled")
