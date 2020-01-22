@@ -33,7 +33,51 @@ function(CHECK_VAR_FILE FILE_VAR)
 	endif()
 endfunction()
 
-function(NRF_FLASH_SETTINGS TARGET)
+function(NRF_MERGE_HEX TARGET APP_HEX OUT_HEX)
+	if (NOT GENERATE_MERGE_HEX)
+		return()
+	endif()
+	if (NOT MERGEHEX_BIN)
+		find_program(MERGEHEX_BIN mergehex)
+	endif()
+	if (NOT MERGEHEX_BIN)
+		message(WARNING "mergehex not found, no Full hex file can be created")
+		return()
+	endif()
+
+#	CHECK_VAR_FILE(TARGET_HEX_FILE)
+#	if (NOT TARGET_HEX_FILE-REALPATH)
+#		message(WARNING "No APP_HEX_FILE was specified or ${TARGET_HEX_FILE} doesn't exist")
+#		return()
+#	endif()
+
+	CHECK_VAR_FILE(SOFTDEVICE_HEX_FILE)
+	if (NOT SOFTDEVICE_HEX_FILE-REALPATH)
+		message(WARNING "No SOFTDEVICE_HEX_FILE file was specified or ${SOFTDEVICE_HEX_FILE} doesn't exist")
+		return()
+	endif()
+
+	if (HAS_BOOTLOADER)
+		CHECK_VAR_FILE(BOOTLOADER_HEX_FILE)
+		if (NOT BOOTLOADER_HEX_FILE-REALPATH)
+			message(WARNING "No BOOTLOADER_HEX_FILE file was specified or ${BOOTLOADER_HEX_FILE} doesn't exist")
+			return()
+		endif()
+		NRF_GENERATE_SETTINGS(${TARGET})
+		set(BOOTHEX_FILE ${BOOTLOADER_HEX_FILE})
+		set(SETTINGS_FILE ${SETTINGS_HEX_FILE})
+	else()
+		set(BOOTHEX_FILE )
+		set(SETTINGS_FILE )
+	endif()
+	set(MERGE_HEX_CMD COMMAND ${MERGEHEX_BIN} -m ${BOOTHEX_FILE} ${SETTINGS_FILE} ${APP_HEX} ${SOFTDEVICE_HEX_FILE} -o ${OUT_HEX})
+	message(STATUS "MERGE HEX: ${MERGE_HEX_CMD}")
+	add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${MERGE_HEX_CMD})
+
+endfunction()
+
+
+function(NRF_GENERATE_SETTINGS TARGET )
 	CHECK_VAR_FILE(BOOTLOADER_HEX_FILE)
 	if (NOT BOOTLOADER_HEX_FILE-REALPATH)
 		message(WARNING "No BOOTLOADER_HEX_FILE was specified or ${BOOTLOADER_HEX_FILE} doesn't exist")
@@ -72,9 +116,6 @@ function(NRF_FLASH_SETTINGS TARGET)
 #			COMMAND ${MERGEHEX_BIN} -m ${BOOTLOADER_HEX_FILE-REALPATH} ${SETTINGS_HEX_FILE} -o ${BOOT_BUNDLE_HEX_FILE}
 #			COMMAND echo "Bootloader bundle hex done ${BOOT_BUNDLE_HEX_FILE}"
 #			COMMAND ${DELFILE_CMD} ${SETTINGS_HEX_FILE}
-			PARENT_SCOPE)
-	set(SETTINGS_FLASH_CMD
-			-c "program \"${SETTINGS_HEX_FILE}\" verify"
 			PARENT_SCOPE)
 
 	message(STATUS "SETTINGS_HEX_FILE = ${SETTINGS_HEX_FILE}")
@@ -139,6 +180,7 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 	set(FLASH_CLEAN TRUE CACHE BOOL "Flash everything (TRUE) or just program and settings (FALSE)")
 
 	set(HAS_BOOTLOADER TRUE CACHE BOOL "Specify if there's BOOTLOADER")
+	set(GENERATE_MERGE_HEX TRUE CACHE BOOL "Generate Full HEX file")
 
 	if (FLASH_CLEAN)
 		set(FLASH_MASS_ERASE TRUE)
@@ -181,8 +223,11 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 		#	Check for softdevice requirements
 		if (FLASH_SETTINGS)
 			message(STATUS "Settings file flash enabled")
-			NRF_FLASH_SETTINGS(${TARGET})
+			NRF_GENERATE_SETTINGS(${TARGET})
 			message(STATUS "Settings ${SETTINGS_HEX_FILE}")
+			set(SETTINGS_FLASH_CMD
+					-c "program \"${SETTINGS_HEX_FILE}\" verify"
+					PARENT_SCOPE)
 		else()
 			message(STATUS "Settings file flash disabled")
 		endif()
@@ -462,10 +507,14 @@ ENDFUNCTION()
 
 FUNCTION(ADD_HEX_BIN_TARGETS TARGET)
     SET(FILENAME "${CMAKE_BINARY_DIR}/${TARGET}")
+	set(TARGET_HEX_FILE ${FILENAME}.hex)
+	set(OUT_HEX_FILE ${FILENAME}-FULL.hex)
 	set(TARGET_HEX_FILE ${FILENAME}.hex PARENT_SCOPE)
 	set(TARGET_BIN_FILE ${FILENAME}.bin PARENT_SCOPE)
     add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} -Oihex ${FILENAME} ${FILENAME}.hex)
     add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_OBJCOPY} -Obinary ${FILENAME} ${FILENAME}.bin)
+	message(STATUS "ADD_HEX_BIN_TARGETS : ${TARGET} ${TARGET_HEX_FILE}" )
+	NRF_MERGE_HEX(${TARGET} ${TARGET_HEX_FILE} ${OUT_HEX_FILE})
 ENDFUNCTION()
 
 
