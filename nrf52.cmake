@@ -1,5 +1,13 @@
 cmake_minimum_required(VERSION 3.4.0)
 set(nrf52_cmake_dir ${CMAKE_CURRENT_LIST_DIR})
+
+
+if (WIN32)
+	set(DELFILE_CMD del /f)
+else()
+	set(DELFILE_CMD rm -f)
+endif()
+
 FUNCTION(SET_COMPILER_OPTIONS TARGET)
 	target_compile_options(${TARGET} PRIVATE
 		$<$<COMPILE_LANGUAGE:C>:${CFLAGS}>
@@ -35,6 +43,8 @@ endfunction()
 
 function(NRF_MERGE_HEX TARGET APP_HEX OUT_HEX)
 	if (NOT GENERATE_MERGE_HEX)
+		message(STATUS "Not generating a full merge hex" )
+
 		return()
 	endif()
 	if (NOT MERGEHEX_BIN)
@@ -56,39 +66,46 @@ function(NRF_MERGE_HEX TARGET APP_HEX OUT_HEX)
 		message(WARNING "No SOFTDEVICE_HEX_FILE file was specified or ${SOFTDEVICE_HEX_FILE} doesn't exist")
 		return()
 	endif()
-
 	if (HAS_BOOTLOADER)
+		message(STATUS "MERGE HAS bootloader")
+
 		CHECK_VAR_FILE(BOOTLOADER_HEX_FILE)
 		if (NOT BOOTLOADER_HEX_FILE-REALPATH)
 			message(WARNING "No BOOTLOADER_HEX_FILE file was specified or ${BOOTLOADER_HEX_FILE} doesn't exist")
 			return()
 		endif()
-		NRF_GENERATE_SETTINGS(${TARGET})
-		set(BOOTHEX_FILE ${BOOTLOADER_HEX_FILE})
-		set(SETTINGS_FILE ${SETTINGS_HEX_FILE})
+		NRF_GENERATE_SETTINGS(${TARGET} ${APP_HEX})
+
+		set(BOOT_HEX_OUT ${CMAKE_BINARY_DIR}/${TARGET}-bootbundle.hex)
+		set(MERGE_HEX_CMD
+				${SETTINGS_HEX_CMD}
+				COMMAND ${DELFILE_CMD} ${BOOT_HEX_OUT}
+				COMMAND ${MERGEHEX_BIN} -m ${BOOTLOADER_HEX_FILE-REALPATH} ${SETTINGS_HEX_FILE} -o ${BOOT_HEX_OUT}
+				)
+
 	else()
-		set(BOOTHEX_FILE )
-		set(SETTINGS_FILE )
+		set(MERGE_HEX_CMD)
+		set(BOOT_HEX_OUT)
 	endif()
-	set(MERGE_HEX_CMD COMMAND ${MERGEHEX_BIN} -m ${BOOTHEX_FILE} ${SETTINGS_FILE} ${APP_HEX} ${SOFTDEVICE_HEX_FILE} -o ${OUT_HEX})
+	set(MERGE_HEX_CMD ${MERGE_HEX_CMD}
+			COMMAND ${MERGEHEX_BIN} -m ${BOOT_HEX_OUT} ${APP_HEX} ${SOFTDEVICE_HEX_FILE} -o ${OUT_HEX})
 	message(STATUS "MERGE HEX: ${MERGE_HEX_CMD}")
-	add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${MERGE_HEX_CMD})
+	add_custom_command(TARGET ${TARGET} POST_BUILD ${MERGE_HEX_CMD})
 
 endfunction()
 
 
-function(NRF_GENERATE_SETTINGS TARGET )
-	CHECK_VAR_FILE(BOOTLOADER_HEX_FILE)
-	if (NOT BOOTLOADER_HEX_FILE-REALPATH)
-		message(WARNING "No BOOTLOADER_HEX_FILE was specified or ${BOOTLOADER_HEX_FILE} doesn't exist")
-		return()
-	endif()
-	CHECK_VAR_FILE(APP_HEX_FILE)
-	if (NOT APP_HEX_FILE-REALPATH)
-		message(WARNING "No APP_HEX_FILE was specified or ${APP_HEX_FILE} doesn't exist")
-		return()
-	endif()
-	message(STATUS "Bootloader file ${BOOTLOADER_HEX_FILE-REALPATH}")
+function(NRF_GENERATE_SETTINGS TARGET APP_HEX)
+#	CHECK_VAR_FILE(BOOTLOADER_HEX_FILE)
+#	if (NOT BOOTLOADER_HEX_FILE-REALPATH)
+#		message(WARNING "No BOOTLOADER_HEX_FILE was specified or ${BOOTLOADER_HEX_FILE} doesn't exist")
+#		return()
+#	endif()
+#	CHECK_VAR_FILE(APP_HEX_FILE)
+#	if (NOT APP_HEX_FILE-REALPATH)
+#		message(WARNING "No APP_HEX_FILE was specified or ${APP_HEX_FILE} doesn't exist")
+#		return()
+#	endif()
 #	Check for NRFUTIL to create the settings page
 	if (NOT NRFUTIL_BIN)
 		find_program(NRFUTIL_BIN nrfutil)
@@ -107,18 +124,21 @@ function(NRF_GENERATE_SETTINGS TARGET )
 #	endif()
 
 	set(SETTINGS_HEX_FILE ${CMAKE_BINARY_DIR}/${TARGET}-settings.hex)
+	set(SETTINGS_HEX_FILE ${CMAKE_BINARY_DIR}/${TARGET}-settings.hex PARENT_SCOPE)
+	message(STATUS "DELFILE_CMD = ${DELFILE_CMD}")
 
 	set(SETTINGS_HEX_CMD
 			COMMAND echo "Preparing Settings hex file"
 			COMMAND ${DELFILE_CMD} ${SETTINGS_HEX_FILE}
 #			COMMAND ${DELFILE_CMD} ${BOOT_BUNDLE_HEX_FILE}
-			COMMAND ${NRFUTIL_BIN} settings generate --family NRF52 --application ${APP_HEX_FILE} --application-version 1 --bootloader-version 1 --bl-settings-version 1 "${SETTINGS_HEX_FILE}"
+			COMMAND ${NRFUTIL_BIN} settings generate --family NRF52 --application ${APP_HEX} --application-version 1 --bootloader-version 1 --bl-settings-version 1 "${SETTINGS_HEX_FILE}"
 #			COMMAND ${MERGEHEX_BIN} -m ${BOOTLOADER_HEX_FILE-REALPATH} ${SETTINGS_HEX_FILE} -o ${BOOT_BUNDLE_HEX_FILE}
 #			COMMAND echo "Bootloader bundle hex done ${BOOT_BUNDLE_HEX_FILE}"
 #			COMMAND ${DELFILE_CMD} ${SETTINGS_HEX_FILE}
-			PARENT_SCOPE)
-
+			)
+	set(SETTINGS_HEX_CMD "${SETTINGS_HEX_CMD}" PARENT_SCOPE)
 	message(STATUS "SETTINGS_HEX_FILE = ${SETTINGS_HEX_FILE}")
+	message(STATUS "SETTINGS_HEX_CMD = ${SETTINGS_HEX_CMD}")
 endfunction()
 
 
@@ -197,11 +217,6 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 
 
 
-	if (WIN32)
-		set(DELFILE_CMD del /f)
-	else()
-		set(DELFILE_CMD rm -f)
-	endif()
 
 	if (FLASH_MASS_ERASE)
 		message(STATUS "Mass erase enabled")
@@ -209,6 +224,13 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 	else()
 		message(STATUS "Mass erase disabled")
 		set(MASS_ERASE_FLASH_CMD)
+	endif()
+	if (HAS_BOOTLOADER)
+		CHECK_VAR_FILE(BOOTLOADER_HEX_FILE)
+		if (NOT BOOTLOADER_HEX_FILE-REALPATH)
+			message(WARNING "No BOOTLOADER_HEX_FILE was specified or ${BOOTLOADER_HEX_FILE} doesn't exist")
+			set(HAS_BOOTLOADER FALSE)
+		endif()
 	endif()
 	if (HAS_BOOTLOADER)
 		message(STATUS "Creating config for bootloader")
@@ -223,7 +245,7 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 		#	Check for softdevice requirements
 		if (FLASH_SETTINGS)
 			message(STATUS "Settings file flash enabled")
-			NRF_GENERATE_SETTINGS(${TARGET})
+			NRF_GENERATE_SETTINGS(${TARGET} ${APP_HEX_FILE})
 			message(STATUS "Settings ${SETTINGS_HEX_FILE}")
 			set(SETTINGS_FLASH_CMD
 					-c "program \"${SETTINGS_HEX_FILE}\" verify"
