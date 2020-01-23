@@ -248,8 +248,7 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 			NRF_GENERATE_SETTINGS(${TARGET} ${APP_HEX_FILE})
 			message(STATUS "Settings ${SETTINGS_HEX_FILE}")
 			set(SETTINGS_FLASH_CMD
-					-c "program \"${SETTINGS_HEX_FILE}\" verify"
-					PARENT_SCOPE)
+					-c "program \"${SETTINGS_HEX_FILE}\" verify")
 		else()
 			message(STATUS "Settings file flash disabled")
 		endif()
