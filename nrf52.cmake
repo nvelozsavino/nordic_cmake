@@ -14,6 +14,7 @@ FUNCTION(SET_COMPILER_OPTIONS TARGET)
 			$<$<COMPILE_LANGUAGE:CXX>:${CXXFLAGS}>
 			$<$<COMPILE_LANGUAGE:ASM>:${ASMFLAGS}>
 		)
+	target_link_options(${TARGET} PRIVATE -Wl,-gc-sections,--print-memory-usage)
 ENDFUNCTION()
 set(CMAKE_SYSTEM_NAME Generic)
 
