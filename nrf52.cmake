@@ -274,7 +274,7 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 	set (APP_FLASH_CMD -c "program \"${APP_HEX_FILE}\" verify")
 
 	if (HLA_SERIAL)
-		set(HLA_SERIAL_FLASH_CMD "hla_serial ${HLA_SERIAL}")
+		set(HLA_SERIAL_FLASH_CMD -c "hla_serial ${HLA_SERIAL}")
 	endif()
 
 
