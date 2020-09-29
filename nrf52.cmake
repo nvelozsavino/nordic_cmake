@@ -2,11 +2,11 @@ cmake_minimum_required(VERSION 3.4.0)
 set(nrf52_cmake_dir ${CMAKE_CURRENT_LIST_DIR})
 
 
-if (WIN32)
-	set(DELFILE_CMD del /f)
-else()
-	set(DELFILE_CMD rm -f)
-endif()
+#if (WIN32)
+	set(DELFILE_CMD cmake -E remove)
+#else()
+#	set(DELFILE_CMD rm -f)
+#endif()
 
 FUNCTION(SET_COMPILER_OPTIONS TARGET)
 	target_compile_options(${TARGET} PRIVATE
@@ -379,7 +379,7 @@ function(GENERATE_UPDATE_FLASH_TARGET TARGET UPDATE_FILE_TYPE ZIP_FILE)
 		return()
 	endif()
 
-	set(UPDATE_CMD_START nrfutil pkg generate)
+	set(UPDATE_CMD_START ${NRFUTIL_BIN} pkg generate)
 	set(UPDATE_ARGS_COMMON
 			--key-file ${KEY_PEM_FILE-REALPATH}
 			--hw-version ${NRF_HW_VERSION}
@@ -517,7 +517,7 @@ function(GENERATE_UPDATE_FLASH_TARGET TARGET UPDATE_FILE_TYPE ZIP_FILE)
 	message(STATUS "Update file: ${ZIP_FILE}")
 	add_custom_target(Generate_Update
 			DEPENDS ${TARGET}
-			COMMAND nrfutil -v pkg generate ${GEN_UPDATE_ARGS} ${ZIP_FILE}
+			COMMAND ${NRFUTIL_BIN} -v pkg generate ${GEN_UPDATE_ARGS} ${ZIP_FILE}
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} USES_TERMINAL)
 
 
