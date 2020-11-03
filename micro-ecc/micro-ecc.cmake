@@ -2,12 +2,12 @@
         message(FATAL_ERROR "MICRO_ECC_PATH not set")
     endif()
     if (WIN32 OR WIN64)
-        set(MICRO_ECC_BUILD build.bat)
+        set(MICRO_ECC_BUILD ${CMAKE_CURRENT_LIST_DIR}/build.bat)
     else()
-        set(MICRO_ECC_BUILD build.sh)
+        set(MICRO_ECC_BUILD ${CMAKE_CURRENT_LIST_DIR}/build.sh)
     endif()
     message(STATUS "MICRO_ECC ${MICRO_ECC_PATH}")
-    add_custom_target(.
+    add_custom_target(micro-ecc
             COMMAND ${CMAKE_COMMAND} -E env "GNU_INSTALL_ROOT=${TOOLCHAIN_PREFIX}/" ${MICRO_ECC_BUILD} nrf52hf_armgcc
             WORKING_DIRECTORY "${MICRO_ECC_PATH}"
             BYPRODUCTS 	${MICRO_ECC_PATH}/nrf52hf_armgcc/armgcc/_build
