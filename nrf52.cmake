@@ -277,11 +277,11 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 	if (HLA_SERIAL)
 		set(HLA_SERIAL_FLASH_CMD -c "hla_serial ${HLA_SERIAL}")
 	endif()
-
-
+	set(EXTRA_OPENOCD_CMD "" CACHE STRING "OpenOCD extra command -c")
 
 	set(OPENOCD_FLASH_CMD
 			${HLA_SERIAL_FLASH_CMD}
+			${EXTRA_OPENOCD_CMD}
 			-c "reset_config none"
 			-c init
 			-c halt
@@ -289,7 +289,8 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 			${SOFTDEVICE_FLASH_CMD}
 			${SETTINGS_FLASH_CMD}
 			${BOOTLOADER_FLASH_CMD}
-			${APP_FLASH_CMD})
+			${APP_FLASH_CMD}
+			)
 
 	message(STATUS "OPENOCD_FLASH_CMD = ${OPENOCD_FLASH_CMD}")
 	message(STATUS "SETTINGS_HEX_CMD = ${SETTINGS_HEX_CMD}")
