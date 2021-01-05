@@ -124,6 +124,11 @@ function(NRF_GENERATE_SETTINGS TARGET APP_HEX)
 		return()
 	endif()
 
+	if (NOT BL_SETTINGS_VERSION)
+		set(BL_SETTINGS_VERSION 2)
+	endif()
+	message(STATUS "Using BL Settings version ${BL_SETTINGS_VERSION}")
+
 #	if (NOT MERGEHEX_BIN)
 #		find_program(MERGEHEX_BIN mergehex)
 #	endif()
@@ -139,7 +144,7 @@ function(NRF_GENERATE_SETTINGS TARGET APP_HEX)
 	set(SETTINGS_HEX_CMD
 			COMMAND echo "Preparing Settings hex file"
 			COMMAND ${DELFILE_CMD} ${SETTINGS_HEX_FILE}
-			COMMAND ${NRFUTIL_BIN} settings generate --family NRF52 --application ${APP_HEX} --application-version 1 --bootloader-version 1 --bl-settings-version 1 "${SETTINGS_HEX_FILE}"
+			COMMAND ${NRFUTIL_BIN} settings generate --family NRF52 --application ${APP_HEX} --application-version 1 --bootloader-version 1 --bl-settings-version ${BL_SETTINGS_VERSION} "${SETTINGS_HEX_FILE}"
 			)
 	set(SETTINGS_HEX_CMD "${SETTINGS_HEX_CMD}" PARENT_SCOPE)
 	set(SETTINGS_HEX_CMD_BYPRODUCTS ${SETTINGS_HEX_FILE} PARENT_SCOPE)
