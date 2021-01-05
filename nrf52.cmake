@@ -375,8 +375,8 @@ function(GENERATE_UPDATE_FLASH_TARGET TARGET UPDATE_FILE_TYPE ZIP_FILE)
 	endif()
 
 
-	if (NOT SOFTDEVICE_FWID)
-		message(WARNING "No SOFTDEVICE_FWID was specified, please check codes in
+	if (NOT SOFTDEVICE_FWID_REQ)
+		message(WARNING "No SOFTDEVICE_FWID_REQ was specified, please check codes in
 		 		https://github.com/NordicSemiconductor/pc-nrfutil/blob/master/README.md")
 		return()
 	endif()
@@ -395,7 +395,7 @@ function(GENERATE_UPDATE_FLASH_TARGET TARGET UPDATE_FILE_TYPE ZIP_FILE)
 	set(UPDATE_ARGS_COMMON
 			--key-file ${KEY_PEM_FILE-REALPATH}
 			--hw-version ${NRF_HW_VERSION}
-			--sd-req ${SOFTDEVICE_FWID})
+			--sd-req ${SOFTDEVICE_FWID_REQ})
 
 
 
@@ -473,8 +473,8 @@ function(GENERATE_UPDATE_FLASH_TARGET TARGET UPDATE_FILE_TYPE ZIP_FILE)
 				${UPDATE_ARGS_COMMON})
 
 
-		if (NOT SOFTDEVICE_FWID_OLD)
-			message(WARNING "No SOFTDEVICE_FWID_OLD was specified, please check codes in
+		if (NOT SOFTDEVICE_FWID_ID)
+			message(WARNING "No SOFTDEVICE_FWID_ID was specified, please check codes in
 		 		https://github.com/NordicSemiconductor/pc-nrfutil/blob/master/README.md")
 			return()
 		endif()
@@ -484,7 +484,7 @@ function(GENERATE_UPDATE_FLASH_TARGET TARGET UPDATE_FILE_TYPE ZIP_FILE)
 				${BL_UPDATE_ARGS}
 				${APP_UPDATE_ARGS}
 				${SD_UPDATE_ARGS}
-				--sd-id ${SOFTDEVICE_FWID_OLD}
+				--sd-id ${SOFTDEVICE_FWID_ID}
 				${UPDATE_ARGS_COMMON})
 
 
@@ -504,8 +504,8 @@ function(GENERATE_UPDATE_FLASH_TARGET TARGET UPDATE_FILE_TYPE ZIP_FILE)
 				${UPDATE_ARGS_COMMON})
 
 
-		if (SOFTDEVICE_FWID_OLD)
-			message(WARNING "No SOFTDEVICE_FWID_OLD was specified, please check codes in
+		if (SOFTDEVICE_FWID_ID)
+			message(WARNING "No SOFTDEVICE_FWID_ID was specified, please check codes in
 		 		https://github.com/NordicSemiconductor/pc-nrfutil/blob/master/README.md")
 			return()
 		endif()
@@ -514,7 +514,7 @@ function(GENERATE_UPDATE_FLASH_TARGET TARGET UPDATE_FILE_TYPE ZIP_FILE)
 		set(GEN_UPDATE_ARGS
 				${APP_UPDATE_ARGS}
 				${SD_UPDATE_ARGS}
-				--sd-id ${SOFTDEVICE_FWID_OLD}
+				--sd-id ${SOFTDEVICE_FWID_ID}
 				${UPDATE_ARGS_COMMON})
 
 
