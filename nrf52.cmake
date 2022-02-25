@@ -44,7 +44,7 @@ endfunction()
 
 function(NRF_MERGE_HEX TARGET APP_HEX OUT_HEX)
 	if (NOT GENERATE_MERGE_HEX)
-		message(STATUS "Not generating a full merge hex" )
+		message(WARNING "Not generating a full merge hex" )
 
 		return()
 	endif()
@@ -196,8 +196,7 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 		find_program(OPENOCD_BIN openocd)
 
 		if (NOT OPENOCD_BIN)
-			message(WANING "OpenOCD binaries, not found, no FLASH target will be created")
-			return()
+			message(WARNING "OpenOCD binaries, not found, no FLASH target will be created")
 		else()
 			message(STATUS "Found OpenOCD binaries in ${OPENOCD_BIN}")
 		endif()
@@ -213,7 +212,6 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 
 	set(HAS_BOOTLOADER TRUE CACHE BOOL "Specify if there's BOOTLOADER")
 	set(GENERATE_MERGE_HEX TRUE CACHE BOOL "Generate Full HEX file")
-
 	if (FLASH_CLEAN)
 		set(FLASH_MASS_ERASE TRUE)
 		set(FLASH_BOOTLOADER TRUE)
