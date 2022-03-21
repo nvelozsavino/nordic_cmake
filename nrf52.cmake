@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.4.0)
 set(nrf52_cmake_dir ${CMAKE_CURRENT_LIST_DIR})
 
+set(FLASH_CLEAN TRUE CACHE BOOL "Flash everything (TRUE) or just program and settings (FALSE)")
+set(HAS_BOOTLOADER TRUE CACHE BOOL "Specify if there's BOOTLOADER")
+set(GENERATE_MERGE_HEX TRUE CACHE BOOL "Generate Full HEX file")
 
 #if (WIN32)
 	set(DELFILE_CMD cmake -E remove)
@@ -44,8 +47,7 @@ endfunction()
 
 function(NRF_MERGE_HEX TARGET APP_HEX OUT_HEX)
 	if (NOT GENERATE_MERGE_HEX)
-		message(WARNING "Not generating a full merge hex" )
-
+		message(WARNING "Not generating a full merge hex: ${GENERATE_MERGE_HEX}" )
 		return()
 	endif()
 	if (NOT MERGEHEX_BIN)
@@ -67,6 +69,7 @@ function(NRF_MERGE_HEX TARGET APP_HEX OUT_HEX)
 		message(WARNING "No SOFTDEVICE_HEX_FILE file was specified or ${SOFTDEVICE_HEX_FILE} doesn't exist")
 		return()
 	endif()
+	message(STATUS "HAS_BOOTLOADER = ${HAS_BOOTLOADER}")
 	if (HAS_BOOTLOADER)
 		message(STATUS "MERGE HAS bootloader")
 
@@ -208,10 +211,7 @@ function(NRF_FLASH_TARGET TARGET APP_HEX_FILE)
 	set(HLA_SERIAL "" CACHE STRING "HLA Serial")
 	set(OPENOCD_EXTRA_CMD "" CACHE STRING "OpenOCD extra command")
 
-	set(FLASH_CLEAN TRUE CACHE BOOL "Flash everything (TRUE) or just program and settings (FALSE)")
 
-	set(HAS_BOOTLOADER TRUE CACHE BOOL "Specify if there's BOOTLOADER")
-	set(GENERATE_MERGE_HEX TRUE CACHE BOOL "Generate Full HEX file")
 	if (FLASH_CLEAN)
 		set(FLASH_MASS_ERASE TRUE)
 		set(FLASH_BOOTLOADER TRUE)

@@ -29,5 +29,5 @@ if [ ! -f micro-ecc/uECC.c ]; then
     git clone https://github.com/kmackay/micro-ecc.git
 fi
 
-make -C "$1/armgcc"
+make -C "$1/armgcc" $2
 
