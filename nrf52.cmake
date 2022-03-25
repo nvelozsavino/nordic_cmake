@@ -663,6 +663,7 @@ FUNCTION(CREATE_ELF_HEX_BIN_TARGETS TARGET)
     endif()
     IS_PARAM(NO_MERGE ${ARGV})
     IS_PARAM(NO_SETTINGS ${ARGV})
+    IS_PARAM(CLEAN_OUTPUT ${ARGV})
     message(STATUS "Other Parameters:")
     message(STATUS "\t OUTPUT_FOLDER = ${OUTPUT_FOLDER}")
     message(STATUS "\t OUTPUT_NAME = ${OUTPUT_NAME}")
@@ -672,6 +673,7 @@ FUNCTION(CREATE_ELF_HEX_BIN_TARGETS TARGET)
     message(STATUS "\t BL_SETTINGS_VERSION = ${BL_SETTINGS_VERSION}")
     message(STATUS "\t NO_MERGE = ${NO_MERGE}")
     message(STATUS "\t NO_SETTINGS = ${NO_SETTINGS}")
+    message(STATUS "\t CLEAN_OUTPUT = ${CLEAN_OUTPUT}")
     message(STATUS "\n")
 
 
@@ -696,6 +698,14 @@ FUNCTION(CREATE_ELF_HEX_BIN_TARGETS TARGET)
     message(STATUS "\t BIN file = ${${TARGET}-BIN_FILE}")
     set(COMMANDS)
     set(FILES)
+    set(BYPRODUCTS ${TARGET}.hex ${TARGET}.bin ${TARGET}.elf)
+    if (CLEAN_OUTPUT)
+        set(BYPRODUCTS ${BYPRODUCTS}
+                ${${TARGET}-ELF_FILE}
+                ${${TARGET}-HEX_FILE}
+                ${${TARGET}-BIN_FILE}
+                )
+    endif()
     #    set(OUT_HEX_FILE ${OUTPUT}-FULL.hex PARENT_SCOPE)
 
 
@@ -717,6 +727,11 @@ FUNCTION(CREATE_ELF_HEX_BIN_TARGETS TARGET)
                     COMMAND ${CMAKE_COMMAND} -E rm -f ${${TARGET}-SETTINGS}
                     COMMAND ${SETTINGS_CMD})
             set(FILES ${FILES} ${${TARGET}-SETTINGS} ${BOOTLOADER_HEX_FILE-REALPATH})
+            if (CLEAN_OUTPUT)
+                set(BYPRODUCTS ${BYPRODUCTS}
+                        ${${TARGET}-SETTINGS}
+                        )
+            endif()
         endif()
     endif()
 
@@ -746,10 +761,15 @@ FUNCTION(CREATE_ELF_HEX_BIN_TARGETS TARGET)
                 COMMAND echo "Creating Merged hex"
                 COMMAND ${CMAKE_COMMAND} -E rm -f ${${TARGET}-MERGED_FILE}
                 COMMAND ${MERGED_CMD})
+        if (CLEAN_OUTPUT)
+            set(BYPRODUCTS ${BYPRODUCTS}
+                    ${${TARGET}-MERGED_FILE}
+                    )
+        endif()
 
     endif()
 
-
+    message(STATUS "ByProducts: ${BYPRODUCTS}")
     add_custom_command(TARGET ${TARGET} POST_BUILD
             COMMAND echo "Creating elf, hex and bin"
             COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_FOLDER}
@@ -763,7 +783,7 @@ FUNCTION(CREATE_ELF_HEX_BIN_TARGETS TARGET)
             COMMAND ${CMAKE_COMMAND} -E copy ${TARGET}.hex ${${TARGET}-HEX_FILE}
             COMMAND ${CMAKE_COMMAND} -E copy ${TARGET}.bin ${${TARGET}-BIN_FILE}
             ${COMMANDS}
-            BYPRODUCTS ${TARGET}.hex ${TARGET}.bin ${TARGET}.elf
+            BYPRODUCTS  ${BYPRODUCTS}
             )
     message(STATUS "==== CREATE_ELF_HEX_BIN_TARGETS (${TARGET})- Ending ====")
     message(STATUS "\n")
