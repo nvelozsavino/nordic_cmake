@@ -103,7 +103,7 @@ function(GENERATE_DFU_ZIP_CMD TYPE ZIP_FILE OUTPUT_VAR)
             return()
         endif()
         IS_NUMBER(APP_VERSION)
-        if (NOT APP_VERSION OR NOT APP_VERSION-IS_NUMBER)
+        if (NOT DEFINED APP_VERSION OR NOT APP_VERSION-IS_NUMBER)
             message(WARNING "APP_VERSION (${APP_VERSION}) incorrect, expected number")
             return()
         endif()
@@ -121,7 +121,7 @@ function(GENERATE_DFU_ZIP_CMD TYPE ZIP_FILE OUTPUT_VAR)
         endif()
 
         IS_NUMBER(BOOTLOADER_VERSION)
-        if (NOT BOOTLOADER_VERSION OR NOT BOOTLOADER_VERSION-IS_NUMBER)
+        if (NOT DEFINED BOOTLOADER_VERSION OR NOT BOOTLOADER_VERSION-IS_NUMBER)
             message(WARNING "BOOTLOADER_VERSION (${BOOTLOADER_VERSION}) incorrect, expected number")
             return()
         endif()
@@ -167,9 +167,14 @@ function(GENERATE_DFU_ZIP_CMD TYPE ZIP_FILE OUTPUT_VAR)
 endfunction()
 
 function(GENERATE_DFU_ZIP TARGET TYPE ZIP_FILE)
+    EXTRACT_PARAM(DEPENDS ${ARGV})
+    if (DEPENDS)
+        message(STATUS "DEPENDS ${DEPENDS}")
+    endif()
     GENERATE_DFU_ZIP_CMD(${TYPE} ${ZIP_FILE} GENERATE_ZIP_CMD ${ARGV})
     if (GENERATE_ZIP_CMD)
     add_custom_target(${TARGET}
+            DEPENDS ${DEPENDS}
             COMMAND ${GENERATE_ZIP_CMD}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} USES_TERMINAL)
     endif()
@@ -221,13 +226,13 @@ function(GENERATE_SETTINGS_CMD SETTINGS_FILE OUTPUT_VAR)
 
     IS_NUMBER(BOOTLOADER_VERSION)
     message(STATUS "BOOTLOADER_VERSION ${BOOTLOADER_VERSION} is number ${BOOTLOADER_VERSION-IS_NUMBER}")
-    if (NOT BOOTLOADER_VERSION OR NOT BOOTLOADER_VERSION-IS_NUMBER)
+    if (NOT DEFINED BOOTLOADER_VERSION OR NOT BOOTLOADER_VERSION-IS_NUMBER)
         message(WARNING "BOOTLOADER_VERSION (${BOOTLOADER_VERSION}) incorrect, expected number")
         return()
     endif()
     IS_NUMBER(BL_SETTINGS_VERSION)
     message(STATUS "BOOTLOADER_VERSION ${BL_SETTINGS_VERSION} is number ${BL_SETTINGS_VERSION-IS_NUMBER}")
-    if (NOT BOOTLOADER_VERSION OR NOT BOOTLOADER_VERSION-IS_NUMBER)
+    if (NOT DEFINED BOOTLOADER_VERSION OR NOT BOOTLOADER_VERSION-IS_NUMBER)
         message(WARNING "BL_SETTINGS_VERSION (${BL_SETTINGS_VERSION}) incorrect, expected number")
         return()
     endif()
@@ -249,7 +254,7 @@ function(GENERATE_SETTINGS_CMD SETTINGS_FILE OUTPUT_VAR)
         endif()
         IS_NUMBER(APP_VERSION)
         message(STATUS "APP_VERSION ${APP_VERSION} is number ${APP_VERSION-IS_NUMBER}")
-        if (NOT APP_VERSION OR NOT APP_VERSION-IS_NUMBER)
+        if (NOT DEFINED APP_VERSION OR NOT APP_VERSION-IS_NUMBER)
             return()
         endif()
         set(APP_CMD --application ${APP_HEX_FILE-REALPATH} --application-version ${APP_VERSION})
@@ -793,8 +798,6 @@ endfunction()
 
 
 function(CREATE_FLASH TARGET)
-
-
     message(STATUS "\n")
     message(STATUS "\n")
     message(STATUS "==== CREATE_FLASH (${TARGET})- Starting ====")
@@ -834,6 +837,43 @@ function(CREATE_FLASH TARGET)
     message(STATUS "\n")
     message(STATUS "\n")
 ENDFUNCTION()
+
+
+function(CREATE_DFU TARGET)
+    message(STATUS "\n")
+    message(STATUS "\n")
+    message(STATUS "==== CREATE_DFU (${TARGET})- Starting ====")
+    message(STATUS "\n")
+    EXTRACT_PARAM(OUTPUT_FOLDER ${ARGV})
+    EXTRACT_PARAM(OUTPUT_NAME ${ARGV})
+    if (NOT OUTPUT_NAME)
+        set(OUTPUT_NAME ${TARGET}.zip)
+    endif()
+
+    message(STATUS "Other Parameters:")
+    message(STATUS "\t OUTPUT_FOLDER = ${OUTPUT_FOLDER}")
+    message(STATUS "\t OUTPUT_NAME = ${OUTPUT_NAME}")
+    message(STATUS "\t SOFTDEVICE_HEX_FILE = ${SOFTDEVICE_HEX_FILE}")
+    message(STATUS "\t BOOTLOADER_HEX_FILE = ${BOOTLOADER_HEX_FILE}")
+    message(STATUS "\t BOOTLOADER_VERSION = ${BOOTLOADER_VERSION}")
+    message(STATUS "\t BL_SETTINGS_VERSION = ${BL_SETTINGS_VERSION}")
+    message(STATUS "\t NO_MERGE = ${NO_MERGE}")
+    message(STATUS "\t NO_SETTINGS = ${NO_SETTINGS}")
+    message(STATUS "\t CLEAN_OUTPUT = ${CLEAN_OUTPUT}")
+    message(STATUS "\n")
+
+    GENERATE_DFU_ZIP(${TARGET}-DFU-APP "APP"
+            ${OUTPUT_FOLDER}/${OUTPUT_NAME}
+            APP_HEX_FILE ${${TARGET}-HEX_FILE}
+            DEPENDS ${TARGET}
+            ${ARGV}
+            )
+
+    message(STATUS "==== CREATE_DFU (${TARGET})- Ending ====")
+    message(STATUS "\n")
+    message(STATUS "\n")
+ENDFUNCTION()
+
 
 
 
